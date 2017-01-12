@@ -1,0 +1,14 @@
+Package: infiniter
+Maintainer: Scott Sherrill-Mix <R@sherrillmix.com>
+License: GPL-2
+Title: Bayesian infinite mixture models
+Type: Package
+LazyLoad: yes
+Author: Scott Sherrill-Mix
+Description: Provides a few functions for fitting infinite mixture models using Gibb's
+    sampling.
+Depends: stats
+Suggests: testthat
+Version: 0.1.0
+Date: 2017-01-12
+RoxygenNote: 5.0.1
