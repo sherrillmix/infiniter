@@ -1,7 +1,8 @@
 #' Generate fake cluster data
 #' @param nCluster number of clusters
 #' @param nPoints number of points within each cluster
-#' @param nDim number of dimensions
+#' @param nIpd number of IPDs to generate
+#' @param nBase number of bases to generate
 #' @param betweenSd cluster centers are normally distributed around 0 with this standard deviation
 #' @param withinSd points are normally distributed around cluster centers with this standard deviation
 #' @return list with matrix giving point locations (rows are points, columns are dimensions), a matrix of cluster centers and vector of cluster IDs
@@ -9,12 +10,55 @@
 #' @export
 #' @examples
 #' clusts<-generateFakeClusters()
-#' plot(clusts$points,col=clusts$ids)
+#' plot(clusts$ipds,col=clusts$ids)
 #' points(clusts$centers,pch='x',col=1:nrow(clusts$centers),cex=2)
-generateFakeClusters<-function(nCluster=2,nPoints=100,nDim=2,betweenSd=3,withinSd=1){
-  centers<-lapply(1:nCluster,function(xx)stats::rnorm(nDim,0,betweenSd))
-  points<-mapply(function(center,n)do.call(rbind,replicate(n,stats::rnorm(length(center),center,withinSd),simplify=FALSE)),centers,nPoints,SIMPLIFY=FALSE)
-  return(list('points'=do.call(rbind,points),'centers'=do.call(rbind,centers),'ids'=rep(1:nCluster,sapply(points,nrow))))
+generateFakeClusters<-function(nCluster=2,nPoints=100,nIpd=2,nBase=3,nVariantBases=min(3,nBase),betweenSd=3,withinSd=1){
+  centers<-lapply(1:nCluster,function(xx)stats::rnorm(nIpd,0,betweenSd))
+  ipds<-mapply(function(center,n)do.call(rbind,replicate(n,stats::rnorm(length(center),center,withinSd),simplify=FALSE)),centers,nPoints,SIMPLIFY=FALSE)
+  pwms<-mapply(function(x,nVar){
+    pwm<-matrix(.25,nrow=4,ncol=nBase)
+    varBases<-sample(nBase,nVar)
+    for(ii in varBases){
+      pwm[,ii]<-sample(rStickBreak(4))
+    }
+    return(pwm)
+  },1:nCluster,nVariantBases,SIMPLIFY=FALSE)
+  bases<-c('A','C','G','T')
+  seqs<-apply(do.call(rbind,mapply(function(pwm,n){
+      do.call(cbind,lapply(1:nBase,function(ii)sample(bases,n,TRUE,prob=pwm[,ii])))
+  },pwms,nPoints,SIMPLIFY=FALSE)),1,paste,collapse='')
+  return(list('ipds'=do.call(rbind,ipds),'centers'=do.call(rbind,centers),'seqs'=seqs,'pwms'=pwms,'ids'=rep(1:nCluster,sapply(ipds,nrow))))
+}
+
+#' Convert sequences to a numbered matrix
+#' @param seqs a character vector of sequences
+#' @param bases the potential characters in the sequences in the order to be numbered
+#' @return matrix with a row for each sequence and a column for each position
+#' @author Scott Sherrill-Mix \email{R@@sherrillmix.com}
+#' @export
+#' @examples
+#' seqToMat(c('AAAT','ATCG'))
+seqToMat<-function(seqs,bases=c('A','C','G','T')){
+  if(any(nchar(seqs)!=nchar(seqs[1])))stop('All sequences not same length')
+  baseLookup<-structure(1:length(bases),.Names=bases)
+  return(do.call(rbind,lapply(strsplit(seqs,''),function(xx)baseLookup[xx])))
+}
+
+
+#' Calculate random proportions from a dirchlet process based on stick breaking procedure
+#'
+#' @param n number of numbers to generate
+#' @param alpha smaller alpha means on average more weight concentrated earlier
+#' @return a vector of n numbers adding to 1 
+#' @export
+#' @examples
+#' rStickBreak(10)
+#' rStickBreak(10,3)
+rStickBreak<-function(n,alpha=1){
+  sticks<-c()
+  for(ii in 1:(n-1))sticks<-c(sticks,stats::rbeta(1,1,alpha)*(1-sum(sticks)))
+  sticks<-c(sticks,1-sum(sticks))
+  return(sticks)
 }
 
 #' Fit an infinite Bayesian mixture model to IPD and sequence data
@@ -27,16 +71,12 @@ generateFakeClusters<-function(nCluster=2,nPoints=100,nDim=2,betweenSd=3,withinS
 #' @author Scott Sherrill-Mix \email{R@@sherrillmix.com}
 #' @export
 #' @examples
-#' 1
+#' fakeSeqs<-generateFakeClusters()
+#' infiniteGaussian(fakeSeqs$ipds,fakeSeqs$seqs,maxK=10)
 infiniteGaussian<-function(ipds,seqs,nIter=100,maxK=100,mc.cores=4){
   n<-nrow(ipds)
-  if(nrow(seqs)!=n)stop('Numbers of seqs does not match ipds')
-  if(!is.matrix(seqs)){
-    if(any(nchar(seqs)!=nchar(seqs[1])))stop('seqs not all same length')
-    seqMat<-do.call(rbind,strsplit(seqs,''))
-  }else{
-    seqMat<-seqs
-  }
+  if(length(seqs)!=n)stop('Numbers of seqs does not match ipds')
+  seqMat<-seqToMat(seqs)
   jagsModel <- '
     var pwm[nSeq,4,k];
     model {

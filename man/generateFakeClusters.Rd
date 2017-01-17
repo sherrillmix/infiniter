@@ -4,15 +4,17 @@
 \alias{generateFakeClusters}
 \title{Generate fake cluster data}
 \usage{
-generateFakeClusters(nCluster = 2, nPoints = 100, nDim = 2,
-  betweenSd = 3, withinSd = 1)
+generateFakeClusters(nCluster = 2, nPoints = 100, nIpd = 2, nBase = 3,
+  nVariantBases = min(3, nBase), betweenSd = 3, withinSd = 1)
 }
 \arguments{
 \item{nCluster}{number of clusters}
 
 \item{nPoints}{number of points within each cluster}
 
-\item{nDim}{number of dimensions}
+\item{nIpd}{number of IPDs to generate}
+
+\item{nBase}{number of bases to generate}
 
 \item{betweenSd}{cluster centers are normally distributed around 0 with this standard deviation}
 
@@ -26,7 +28,7 @@ Generate fake cluster data
 }
 \examples{
 clusts<-generateFakeClusters()
-plot(clusts$points,col=clusts$ids)
+plot(clusts$ipds,col=clusts$ids)
 points(clusts$centers,pch='x',col=1:nrow(clusts$centers),cex=2)
 }
 \author{
