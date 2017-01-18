@@ -4,7 +4,7 @@
 \alias{generateFakeClusters}
 \title{Generate fake cluster data}
 \usage{
-generateFakeClusters(nCluster = 2, nPoints = 100, nIpd = 2, nBase = 3,
+generateFakeClusters(nCluster = 2, nPoints = 100, nIpd = 6, nBase = 3,
   nVariantBases = min(3, nBase), betweenSd = 3, withinSd = 1)
 }
 \arguments{
@@ -16,12 +16,14 @@ generateFakeClusters(nCluster = 2, nPoints = 100, nIpd = 2, nBase = 3,
 
 \item{nBase}{number of bases to generate}
 
+\item{nVariantBases}{number of bases in each PWM varying from equal proportions}
+
 \item{betweenSd}{cluster centers are normally distributed around 0 with this standard deviation}
 
 \item{withinSd}{points are normally distributed around cluster centers with this standard deviation}
 }
 \value{
-list with matrix giving point locations (rows are points, columns are dimensions), a matrix of cluster centers and vector of cluster IDs
+list with matrix giving point locations (rows are points, columns are dimensions), a matrix of cluster centers, a vector of sequences, a list of PWMs (rows are positions, columns are bases) and vector of cluster IDs
 }
 \description{
 Generate fake cluster data
