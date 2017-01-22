@@ -118,3 +118,17 @@ infiniteGaussian<-function(ipds,seqs,nIter=100,maxK=100,mc.cores=4){
   },mc.cores=mc.cores)
   return(chains)
 }
+
+#' Run additional sampling on infininte Gaussian model
+#'
+#' @param chains the output from infiniteGaussian
+#' @param nIter number of additional iterations
+#' @export
+#' @return list with matrix giving simulated data and stored JAGS model (can be used for further iterations)
+iterateIG<-function(chains,nIter=500){
+  out<-parallel::mclapply(chains,function(xx){
+    sims<-rjags::coda.samples(model = xx, n.iter = nIter, variable.names = c('p', 'mu', 'sigma','z','pwm','pwmAlpha','a'))
+    return(list('sims'=sims,'model'=chains))
+  })
+  return(out)
+}
