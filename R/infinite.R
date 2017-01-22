@@ -107,10 +107,10 @@ infiniteGaussian<-function(ipds,seqs,nIter=100,maxK=100,mc.cores=4){
   '
   chains<-parallel::mclapply(sample(1:1e6,mc.cores),function(xx){
     model <- rjags::jags.model(
-    textConnection(jagsModel),
-    data=list(ipd=ipds, n=n, k=maxK,nIpd=ncol(ipds),nBase=ncol(seqMat),seq=seqMat),
-    inits=list(.RNG.seed=as.integer(xx),'.RNG.name'='base::Wichmann-Hill'),
-    n.adapt=nIter
+      textConnection(jagsModel),
+      data=list(ipd=ipds, n=n, k=maxK,nIpd=ncol(ipds),nBase=ncol(seqMat),seq=seqMat),
+      inits=list(.RNG.seed=as.integer(xx),'.RNG.name'='base::Wichmann-Hill'),
+      n.adapt=nIter
     )
     chain <-rjags::coda.samples(model = model, n.iter = nIter, variable.names = c('p', 'mu', 'sigma','z','pwm','pwmAlpha','a'))
     rchain <- as.matrix(chain)
@@ -119,16 +119,20 @@ infiniteGaussian<-function(ipds,seqs,nIter=100,maxK=100,mc.cores=4){
   return(chains)
 }
 
-#' Run additional sampling on infininte Gaussian model
+#' Run additional sampling on infinite Gaussian model
 #'
 #' @param chains the output from infiniteGaussian
 #' @param nIter number of additional iterations
 #' @export
 #' @return list with matrix giving simulated data and stored JAGS model (can be used for further iterations)
+#' @examples
+#' fakeSeqs<-generateFakeClusters()
+#' chains<-infiniteGaussian(fakeSeqs$ipds,fakeSeqs$seqs,maxK=10)
+#' iterateIG(chains)
 iterateIG<-function(chains,nIter=500){
   out<-parallel::mclapply(chains,function(xx){
-    sims<-rjags::coda.samples(model = xx, n.iter = nIter, variable.names = c('p', 'mu', 'sigma','z','pwm','pwmAlpha','a'))
-    return(list('sims'=sims,'model'=chains))
+    sims<-rjags::coda.samples(model = xx[['model']], n.iter = nIter, variable.names = c('p', 'mu', 'sigma','z','pwm','pwmAlpha','a'))
+    return(list('sims'=sims,'model'=xx[['model']]))
   })
   return(out)
 }
