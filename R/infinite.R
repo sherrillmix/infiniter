@@ -132,7 +132,7 @@ infiniteGaussian<-function(ipds,seqs,nIter=100,maxK=100,mc.cores=4){
 iterateIG<-function(chains,nIter=500){
   out<-parallel::mclapply(chains,function(xx){
     sims<-rjags::coda.samples(model = xx[['model']], n.iter = nIter, variable.names = c('p', 'mu', 'sigma','z','pwm','pwmAlpha','a'))
-    return(list('sims'=sims,'model'=xx[['model']]))
+    return(list('sims'=as.matrix(sims),'model'=xx[['model']]))
   })
   return(out)
 }
